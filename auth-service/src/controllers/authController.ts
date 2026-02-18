@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import User from "../models/User";
 import { generateApiKey } from "../utils/generateApiKey";
+import logger from "../utils/logger";
 
 export const registerUser = async (req: Request, res: Response) => {
   try {
@@ -10,12 +11,20 @@ export const registerUser = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    console.log(`[${(req as any).requestId}] Registering user: ${email}`);
+    logger.info({
+      requestId: (req as any).requestId,
+      event: "USER_REGISTRATION_ATTEMPT",
+      email,
+    });
 
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
-      console.log(`[${(req as any).requestId}] User already exists: ${email}`);
+      logger.warn({
+        requestId: (req as any).requestId,
+        event: "USER_ALREADY_EXISTS",
+        email,
+      });
       return res.status(400).json({ message: "User already exists" });
     }
 
@@ -26,7 +35,13 @@ export const registerUser = async (req: Request, res: Response) => {
       apiKey
     });
 
-    console.log(`[${(req as any).requestId}] User registered successfully: ${newUser._id}`);
+    logger.info({
+      requestId: (req as any).requestId,
+      event: "USER_REGISTERED_SUCCESS",
+      userId: newUser._id,
+      email,
+      plan: newUser.plan,
+    });
 
     res.status(201).json({
     message: "User registered successfully",
@@ -36,7 +51,11 @@ export const registerUser = async (req: Request, res: Response) => {
     });
 
   } catch (error) {
-    console.error(`[${(req as any).requestId}] Register Error:`, error);
+    logger.error({
+      requestId: (req as any).requestId,
+      event: "USER_REGISTRATION_ERROR",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -48,16 +67,26 @@ export const verifyApiKey = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "API key is required" });
     }
 
-    console.log(`[${(req as any).requestId}] Verifying API key`);
+    logger.info({
+      requestId: (req as any).requestId,
+      event: "API_KEY_VERIFICATION_ATTEMPT",
+    });
 
     const user = await User.findOne({ apiKey });
 
     if (!user) {
-      console.log(`[${(req as any).requestId}] Invalid API key`);
+      logger.warn({
+        requestId: (req as any).requestId,
+        event: "INVALID_API_KEY",
+      });
       return res.status(401).json({ message: "Invalid API key" });
     }
 
-    console.log(`[${(req as any).requestId}] API key verified for user: ${user._id}`);
+    logger.info({
+      requestId: (req as any).requestId,
+      event: "API_KEY_VERIFIED",
+      userId: user._id,
+    });
 
     res.status(200).json({
       valid: true,
@@ -67,7 +96,11 @@ export const verifyApiKey = async (req: Request, res: Response) => {
     });
 
   } catch (error) {
-    console.error(`[${(req as any).requestId}] Verify Error:`, error);
+    logger.error({
+      requestId: (req as any).requestId,
+      event: "API_KEY_VERIFICATION_ERROR",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     res.status(500).json({ message: "Internal server error" });
   }
 };

@@ -7,6 +7,7 @@ services:
       - usage
       - redis
     environment:
+      - SERVICE_NAME=gateway
       - AUTH_SERVICE_URL=http://auth:4001
       - USAGE_SERVICE_URL=http://usage:4002
       - AI_SERVICE_URL=http://ai:4003
@@ -20,6 +21,7 @@ services:
     depends_on:
       - mongo
     environment:
+      - SERVICE_NAME=auth-service
       - MONGO_URI=mongodb://mongo:27017/auth-db
 
   usage:
@@ -29,6 +31,7 @@ services:
     depends_on:
       - mongo
     environment:
+      - SERVICE_NAME=usage-service
       - MONGO_URI=mongodb://mongo:27017/usage-db
 
   ai:
@@ -36,6 +39,7 @@ services:
     ports:
       - "4003:4003"
     environment:
+      - SERVICE_NAME=ai-service
       - OLLAMA_URL=http://host.docker.internal:11434
       - MODEL=llama3:latest
 

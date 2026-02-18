@@ -1,6 +1,8 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import pinoHttp from "pino-http";
+import logger from "./utils/logger";
 import { connectDB } from "./config/db";
 import authRoutes from "./routes/authRoutes";
 
@@ -17,6 +19,19 @@ app.use((req, _res, next) => {
   next();
 });
 
+// Pino HTTP logger middleware
+app.use(
+  pinoHttp({
+    logger,
+    customProps: (req) => ({
+      requestId: req.headers["x-request-id"],
+    }),
+    autoLogging: {
+      ignore: (req) => req.url === "/health",
+    },
+  })
+);
+
 app.use("/auth", authRoutes);
 
 
@@ -29,5 +44,5 @@ app.get("/health", (_req, res) => {
 const PORT = process.env.PORT || 4001;
 
 app.listen(Number(PORT), "0.0.0.0", () => {
-  console.log(`Auth Service running on port ${PORT}`);
+  logger.info({ port: PORT }, `Auth Service running on port ${PORT}`);
 });

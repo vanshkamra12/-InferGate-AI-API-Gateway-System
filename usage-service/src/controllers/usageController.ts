@@ -1,24 +1,38 @@
 import { Request, Response } from "express";
 import Usage from "../models/Usage";
 import RequestLog from "../models/RequestLog";
+import logger from "../utils/logger";
 
 export const initializeUsage = async (req: Request, res: Response) => {
   try {
     const { userId, monthlyTokenLimit } = req.body;
 
-    console.log(`[${(req as any).requestId}] Initializing usage for user: ${userId}`);
+    logger.info({
+      requestId: (req as any).requestId,
+      event: "USAGE_INIT_ATTEMPT",
+      userId,
+      monthlyTokenLimit,
+    });
 
     await Usage.create({
       userId,
       monthlyTokenLimit
     });
 
-    console.log(`[${(req as any).requestId}] Usage initialized successfully`);
+    logger.info({
+      requestId: (req as any).requestId,
+      event: "USAGE_INIT_SUCCESS",
+      userId,
+    });
 
     res.status(201).json({ message: "Usage initialized" });
 
   } catch (error) {
-    console.error(`[${(req as any).requestId}] Init Usage Error:`, error);
+    logger.error({
+      requestId: (req as any).requestId,
+      event: "USAGE_INIT_ERROR",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -27,7 +41,12 @@ export const consumeTokens = async (req: Request, res: Response) => {
   try {
     const { userId, tokens, responseTimeMs } = req.body;
 
-    console.log(`[${(req as any).requestId}] Consuming ${tokens} tokens for user: ${userId}`);
+    logger.info({
+      requestId: (req as any).requestId,
+      event: "TOKEN_CONSUMPTION_ATTEMPT",
+      userId,
+      tokens,
+    });
 
     if (!userId || !tokens) {
       return res.status(400).json({
@@ -75,7 +94,12 @@ export const consumeTokens = async (req: Request, res: Response) => {
 
     if (!updatedUsage) {
 
-      console.log(`[${(req as any).requestId}] Token quota exceeded for user: ${userId}`);
+      logger.warn({
+        requestId: (req as any).requestId,
+        event: "TOKEN_QUOTA_EXCEEDED",
+        userId,
+        tokens,
+      });
 
       await RequestLog.create({
         userId,
@@ -89,7 +113,14 @@ export const consumeTokens = async (req: Request, res: Response) => {
       });
     }
 
-    console.log(`[${(req as any).requestId}] Tokens consumed successfully. Used: ${updatedUsage.usedTokens}/${updatedUsage.monthlyTokenLimit}`);
+    logger.info({
+      requestId: (req as any).requestId,
+      event: "TOKENS_CONSUMED_SUCCESS",
+      userId,
+      tokens,
+      usedTokens: updatedUsage.usedTokens,
+      monthlyTokenLimit: updatedUsage.monthlyTokenLimit,
+    });
 
     await RequestLog.create({
       userId,
@@ -105,7 +136,11 @@ export const consumeTokens = async (req: Request, res: Response) => {
     });
 
   } catch (error) {
-    console.error(`[${(req as any).requestId}] Consume Token Error:`, error);
+    logger.error({
+      requestId: (req as any).requestId,
+      event: "TOKEN_CONSUMPTION_ERROR",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
 
     return res.status(500).json({
       message: "Internal server error"
@@ -117,16 +152,30 @@ export const getUsage = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
-    console.log(`[${(req as any).requestId}] Getting usage for user: ${userId}`);
+    logger.info({
+      requestId: (req as any).requestId,
+      event: "GET_USAGE_ATTEMPT",
+      userId,
+    });
 
     const usage = await Usage.findOne({ userId });
 
     if (!usage) {
-      console.log(`[${(req as any).requestId}] Usage not found for user: ${userId}`);
+      logger.warn({
+        requestId: (req as any).requestId,
+        event: "USAGE_NOT_FOUND",
+        userId,
+      });
       return res.status(404).json({ message: "Usage not found" });
     }
 
-    console.log(`[${(req as any).requestId}] Usage retrieved: ${usage.usedTokens}/${usage.monthlyTokenLimit}`);
+    logger.info({
+      requestId: (req as any).requestId,
+      event: "GET_USAGE_SUCCESS",
+      userId,
+      usedTokens: usage.usedTokens,
+      monthlyTokenLimit: usage.monthlyTokenLimit,
+    });
 
     res.status(200).json({
       usedTokens: usage.usedTokens,
@@ -134,7 +183,11 @@ export const getUsage = async (req: Request, res: Response) => {
     });
 
   } catch (error) {
-    console.error(`[${(req as any).requestId}] Get Usage Error:`, error);
+    logger.error({
+      requestId: (req as any).requestId,
+      event: "GET_USAGE_ERROR",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     res.status(500).json({ message: "Internal server error" });
   }
 };
