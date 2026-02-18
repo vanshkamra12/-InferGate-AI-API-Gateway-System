@@ -30,8 +30,8 @@ export const initializeUsage = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error({
       requestId: (req as any).requestId,
-      event: "USAGE_INIT_ERROR",
-      error: error instanceof Error ? error.message : "Unknown error",
+      event: "USAGE_INIT_FAILED",
+      err: error,
     });
     res.status(500).json({ message: "Internal server error" });
   }
@@ -43,7 +43,7 @@ export const consumeTokens = async (req: Request, res: Response) => {
 
     logger.info({
       requestId: (req as any).requestId,
-      event: "TOKEN_CONSUMPTION_ATTEMPT",
+      event: "USAGE_TOKEN_CONSUME_STARTED",
       userId,
       tokens,
     });
@@ -96,7 +96,7 @@ export const consumeTokens = async (req: Request, res: Response) => {
 
       logger.warn({
         requestId: (req as any).requestId,
-        event: "TOKEN_QUOTA_EXCEEDED",
+        event: "USAGE_TOKEN_QUOTA_EXCEEDED",
         userId,
         tokens,
       });
@@ -115,11 +115,11 @@ export const consumeTokens = async (req: Request, res: Response) => {
 
     logger.info({
       requestId: (req as any).requestId,
-      event: "TOKENS_CONSUMED_SUCCESS",
+      event: "USAGE_TOKEN_CONSUME_SUCCESS",
       userId,
       tokens,
       usedTokens: updatedUsage.usedTokens,
-      monthlyTokenLimit: updatedUsage.monthlyTokenLimit,
+      monthlyLimit: updatedUsage.monthlyTokenLimit,
     });
 
     await RequestLog.create({
@@ -138,8 +138,8 @@ export const consumeTokens = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error({
       requestId: (req as any).requestId,
-      event: "TOKEN_CONSUMPTION_ERROR",
-      error: error instanceof Error ? error.message : "Unknown error",
+      event: "USAGE_TOKEN_CONSUME_FAILED",
+      err: error,
     });
 
     return res.status(500).json({
@@ -154,7 +154,7 @@ export const getUsage = async (req: Request, res: Response) => {
 
     logger.info({
       requestId: (req as any).requestId,
-      event: "GET_USAGE_ATTEMPT",
+      event: "USAGE_GET_STARTED",
       userId,
     });
 
@@ -171,7 +171,7 @@ export const getUsage = async (req: Request, res: Response) => {
 
     logger.info({
       requestId: (req as any).requestId,
-      event: "GET_USAGE_SUCCESS",
+      event: "USAGE_GET_SUCCESS",
       userId,
       usedTokens: usage.usedTokens,
       monthlyTokenLimit: usage.monthlyTokenLimit,
@@ -185,8 +185,8 @@ export const getUsage = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error({
       requestId: (req as any).requestId,
-      event: "GET_USAGE_ERROR",
-      error: error instanceof Error ? error.message : "Unknown error",
+      event: "USAGE_GET_FAILED",
+      err: error,
     });
     res.status(500).json({ message: "Internal server error" });
   }

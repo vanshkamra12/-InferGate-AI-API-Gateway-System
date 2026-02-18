@@ -20,13 +20,30 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors());
 
+// Metrics tracking
+let totalRequests = 0;
+
 // Request ID middleware (must be before pinoHttp)
 app.use(requestIdMiddleware);
+
+// Request counter middleware
+app.use((_req, _res, next) => {
+  totalRequests++;
+  next();
+});
 
 // Pino HTTP logger middleware
 app.use(
   pinoHttp({
     logger,
+    redact: {
+      paths: [
+        "req.headers.authorization",
+        "req.headers['x-api-key']",
+        "req.headers.cookie",
+      ],
+      remove: true,
+    },
     customProps: (req) => ({
       requestId: req.headers["x-request-id"],
     }),
@@ -38,8 +55,27 @@ app.use(
 );
 
 app.get("/health", (_req, res) => {
-  res.status(200).json({ message: "API Gateway Running" });
+  res.status(200).json({
+    status: "OK",
+    service: process.env.SERVICE_NAME || "gateway",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
 });
+
+app.get("/metrics", (_req, res) => {
+  res.status(200).json({
+    totalRequests,
+    uptime: process.uptime(),
+    memoryUsage: {
+      rss: `${(process.memoryUsage().rss / 1024 / 1024).toFixed(2)} MB`,
+      heapUsed: `${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB`,
+      heapTotal: `${(process.memoryUsage().heapTotal / 1024 / 1024).toFixed(2)} MB`,
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.get("/test", authenticate, slidingWindowRateLimiter, testRoute);
 app.post("/v1/register", registerHandler);
 
@@ -58,6 +94,18 @@ app.get(
 
 const PORT = process.env.PORT || 4000;
 
-app.listen(Number(PORT), "0.0.0.0", () => {
+const server = app.listen(Number(PORT), "0.0.0.0", () => {
   logger.info({ port: PORT }, `API Gateway running on port ${PORT}`);
 });
+
+// Graceful shutdown
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
+
+function shutdown() {
+  logger.info("Gracefully shutting down...");
+  server.close(() => {
+    logger.info("Server closed");
+    process.exit(0);
+  });
+}

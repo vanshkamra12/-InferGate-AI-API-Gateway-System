@@ -7,14 +7,17 @@ WORKDIR /app
 # Copy package files first (better caching)
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies (production only after build)
+RUN npm ci
 
 # Copy rest of the source code
 COPY . .
 
 # Build TypeScript
 RUN npm run build
+
+# Remove dev dependencies
+RUN npm prune --production
 
 # Expose the port your app runs on
 EXPOSE 4003

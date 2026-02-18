@@ -24,6 +24,14 @@ app.use((req, _res, next) => {
 app.use(
   pinoHttp({
     logger,
+    redact: {
+      paths: [
+        "req.headers.authorization",
+        "req.headers['x-api-key']",
+        "req.headers.cookie",
+      ],
+      remove: true,
+    },
     customProps: (req) => ({
       requestId: req.headers["x-request-id"],
     }),
@@ -38,11 +46,28 @@ connectDB();
 app.use("/usage", usageRoutes);
 
 app.get("/health", (_req, res) => {
-  res.status(200).json({ message: "Usage Service Running" });
+  res.status(200).json({
+    status: "OK",
+    service: process.env.SERVICE_NAME || "usage-service",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
 });
 
 const PORT = process.env.PORT || 4002;
 
-app.listen(Number(PORT), "0.0.0.0", () => {
+const server = app.listen(Number(PORT), "0.0.0.0", () => {
   logger.info({ port: PORT }, `Usage Service running on port ${PORT}`);
 });
+
+// Graceful shutdown
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
+
+function shutdown() {
+  logger.info("Gracefully shutting down...");
+  server.close(() => {
+    logger.info("Server closed");
+    process.exit(0);
+  });
+}
