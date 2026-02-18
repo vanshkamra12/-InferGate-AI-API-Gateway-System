@@ -575,7 +575,7 @@ Backend & Infrastructure focused on building scalable AI systems.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **Ollama** - Local LLM runtime
 - **LLaMA 3** - Meta's open-source language model
@@ -588,6 +588,6 @@ Backend & Infrastructure focused on building scalable AI systems.
 
 **⭐ Star this repository if you found it helpful!**
 
-Built with ❤️ by [Vansh Kamra](https://github.com/vanshkamra12)
+Built with by [Vansh Kamra](https://github.com/vanshkamra12)
 
 </div>
