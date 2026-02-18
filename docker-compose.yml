@@ -1,0 +1,60 @@
+services:
+
+  gateway:
+    build: ./api-gateway
+    depends_on:
+      - auth
+      - usage
+      - redis
+    environment:
+      - AUTH_SERVICE_URL=http://auth:4001
+      - USAGE_SERVICE_URL=http://usage:4002
+      - AI_SERVICE_URL=http://ai:4003
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  auth:
+    build: ./auth-service
+    ports:
+      - "4001:4001"
+    depends_on:
+      - mongo
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/auth-db
+
+  usage:
+    build: ./usage-service
+    ports:
+      - "4002:4002"
+    depends_on:
+      - mongo
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/usage-db
+
+  ai:
+    build: ./ai-service
+    ports:
+      - "4003:4003"
+    environment:
+      - OLLAMA_URL=http://host.docker.internal:11434
+      - MODEL=llama3:latest
+
+  redis:
+    image: redis:7-alpine
+
+  mongo:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  nginx:
+    build: ./nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - gateway
+
+volumes:
+  mongo-data:
