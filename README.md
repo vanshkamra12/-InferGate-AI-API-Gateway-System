@@ -1,4 +1,4 @@
-# 🚀 InferGate — AI API Gateway System
+# InferGate — AI API Gateway System
 
 A **production-grade, containerized AI API Gateway** built with microservices architecture, reverse proxy, distributed request tracing, and intelligent usage metering.
 
@@ -567,27 +567,3 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ---
 
-## 👨‍💻 Author
-
-**Vansh Kamra**
-
-Backend & Infrastructure focused on building scalable AI systems.
-
----
-
-## Acknowledgments
-
-- **Ollama** - Local LLM runtime
-- **LLaMA 3** - Meta's open-source language model
-- **Docker** - Containerization platform
-- Inspired by production architectures at OpenAI, Anthropic, and Stripe
-
----
-
-<div align="center">
-
-**⭐ Star this repository if you found it helpful!**
-
-Built with by [Vansh Kamra](https://github.com/vanshkamra12)
-
-</div>
